@@ -1,0 +1,10 @@
+{
+  "name": "electric-monkey-haunt",
+  "version": "0.0.1",
+  "description": "Halloween NodeHaunt for electricuted monkey",
+  "dependencies": {
+    "applescript": "latest",
+    "express": "^4.9.8",
+    "johnny-five": "^0.8.14"
+  }
+}
