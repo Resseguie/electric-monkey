@@ -4,7 +4,9 @@ Animatronic monkey for Halloween
 
 Pics/video to come...
 
-Papermache monkey in a dog cage with (fake) jumper cables attached, etc.
+### The Setup
+
+Paper mache monkey in a dog cage with (fake) jumper cables attached, etc.
 
 Monkey has servo to move tail randomly.
 
@@ -17,7 +19,9 @@ Power Tail II used to switch power to drill with bent bit to shake cage.
 
 Small strobe light modified to be triggered from pin.
 
+### Notes
 
+Please note: This is a last minute project, so the implementation is raw. Don't take anything I do here as "best practices". :)
 
 
 
