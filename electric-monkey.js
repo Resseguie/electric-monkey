@@ -25,11 +25,9 @@ var five = require("johnny-five"),
     TAIL_MIN = TAIL_CENTER - 30,
     TAIL_MAX = TAIL_CENTER + 30,
     TAIL_RANGE = TAIL_MAX - TAIL_MIN,
-    TAIL_NORMAL_FACTOR = 0.08,
-    TAIL_SHOCK_FACTOR = 0.5,
-    tailFactor = TAIL_NORMAL_FACTOR,
 
     isRunning = false,
+    tailTimer,
     TRACK_NAME = "electricmonkey",     // track name
     PLAYLIST_NAME = "Electric Monkey", // iTunes playlist it is in
     ANIMATION_DURATION = 15
@@ -43,9 +41,15 @@ itunes.stop();
 itunes.duration(TRACK_NAME, PLAYLIST_NAME, function(err, result) {
   if(err) {
     console.log(err);
+    process.exit(-1);
   }
 
-  ANIMATION_DURATION = Math.floor(result * 1000);
+  if(!result || isNaN(result[0])) {
+    console.log("Error getting animation duration: ", result);
+    process.exit(-1);
+  }
+
+  ANIMATION_DURATION = Math.floor(result[0] * 1000);
   console.log("Animation Duration: "+ANIMATION_DURATION);
 });
 
@@ -66,8 +70,9 @@ board.on("ready", function() {
   vibrate = new five.Pin(VIBRATE_PIN);
   tail = new five.Servo(TAIL_PIN);
 
-  // start normal tail movement
-  moveTail(TAIL_CENTER);
+  // Start it in center then start loop
+  // that only runs if animation active
+  tail.to(TAIL_CENTER, 1000);
 
 });
 
@@ -78,12 +83,12 @@ function moveTail(pos) {
   // based on distance and shock state
   var newPos = Math.floor((Math.random() * TAIL_MAX) + TAIL_MIN),
       delta = Math.abs(pos - newPos),
-      moveDelay = Math.floor( ((Math.random() * 1000) + 500) / (TAIL_RANGE * tailFactor) ),
-      delay = Math.floor(((Math.random() * 600) + 200) * (1 - tailFactor) );
+      moveDelay = Math.floor( ((Math.random() * 1500) + 700) / TAIL_RANGE ),
+      delay = Math.floor(((Math.random() * 300) + 100) );
 
-  tail.to(pos, moveDelay);
+  tail.to(pos, moveDelay);  
 
-  setTimeout(function() {
+  tailTimer = setTimeout(function() {
     moveTail(newPos);
   }, delay + moveDelay);
 }
@@ -101,9 +106,8 @@ function electrocuteMonkey(req, res) {
   // so adding artificial delay
   setTimeout(function() {
     vibrate.high(); // shake the cage
+    moveTail(TAIL_CENTER);
 
-    tailFactor = TAIL_SHOCK_FACTOR; // move tail faster
-    
     itunes.play(TRACK_NAME, PLAYLIST_NAME); // play SFX
 
     // Stop animations after track finished
@@ -111,8 +115,9 @@ function electrocuteMonkey(req, res) {
       console.log("Shock Off");
       vibrate.low();
       strobe.low();
+      clearTimeout(tailTimer);
+      tail.to(TAIL_CENTER, 1000);
       isRunning = false;
-      tailFactor = TAIL_NORMAL_FACTOR;
     }, ANIMATION_DURATION + 1000);
 
   },1500);
