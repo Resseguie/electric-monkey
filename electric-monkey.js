@@ -19,16 +19,19 @@ var five = require("johnny-five"),
     vibrate,
     tail,
 
-    TAIL_CENTER = 45,
-    TAIL_MIN = 10,
-    TAIL_MAX = 80,
+    TAIL_CENTER = 30, // set depending on "center" for your servo
+                      // according to how it is mounted, may not
+                      // necessarily be actual center (90) for servo
+    TAIL_MIN = TAIL_CENTER - 30,
+    TAIL_MAX = TAIL_CENTER + 30,
     TAIL_RANGE = TAIL_MAX - TAIL_MIN,
     TAIL_NORMAL_FACTOR = 0.08,
     TAIL_SHOCK_FACTOR = 0.5,
     tailFactor = TAIL_NORMAL_FACTOR,
 
     isRunning = false,
-    TRACK_NAME = "electric shock sound",
+    TRACK_NAME = "electricmonkey",     // track name
+    PLAYLIST_NAME = "Electric Monkey", // iTunes playlist it is in
     ANIMATION_DURATION = 15
 ;
 
@@ -37,20 +40,26 @@ var five = require("johnny-five"),
 itunes.stop();
 
 // Get the duration of our electric shock SFX
-itunes.duration(TRACK_NAME, function(err, result) {
+itunes.duration(TRACK_NAME, PLAYLIST_NAME, function(err, result) {
+  if(err) {
+    console.log(err);
+  }
+
   ANIMATION_DURATION = Math.floor(result * 1000);
+  console.log("Animation Duration: "+ANIMATION_DURATION);
 });
 
 
 board.on("ready", function() {
 
   // Listen for triggers from Pebble
-  app.get('/shock', electrocuteMonkey);
+  app.get("/shock", electrocuteMonkey);
+
   server = app.listen(3000, function () {
     var host = server.address().address,
         port = server.address().port
 
-    console.log('Electric Monkey listening at http://%s:%s', host, port);
+    console.log("Electric Monkey listening at http://%s:%s", host, port);
   });
 
   strobe = new five.Pin(STROBE_PIN);
@@ -70,7 +79,7 @@ function moveTail(pos) {
   var newPos = Math.floor((Math.random() * TAIL_MAX) + TAIL_MIN),
       delta = Math.abs(pos - newPos),
       moveDelay = Math.floor( ((Math.random() * 1000) + 500) / (TAIL_RANGE * tailFactor) ),
-      delay = Math.floor(((Math.random() * 800) + 400) * (1 - tailFactor) );
+      delay = Math.floor(((Math.random() * 600) + 200) * (1 - tailFactor) );
 
   tail.to(pos, moveDelay);
 
@@ -80,23 +89,34 @@ function moveTail(pos) {
 }
 
 // Initiates the animation sequence
-function electrocuteMonkey() {
+function electrocuteMonkey(req, res) {
   if(isRunning) { return; }
 
   isRunning = true;
-
-  vibrate.high(); // shake the cage
-  strobe.high();  // strobe the lights
-  tailFactor = TAIL_SHOCK_FACTOR; // move tail faster
   
-  itunes.play(TRACK_NAME); // play SFX
+  console.log("Shock On");
+  strobe.high();  // strobe the lights
 
-  // Stop animations after track finished
+  // my strobe takes 1.5 second to start flashing,
+  // so adding artificial delay
   setTimeout(function() {
-    vibrate.low();
-    strobe.low();
-    isRunning = false;
-    tailFactor = TAIL_NORMAL_FACTOR;
-  }, ANIMATION_DURATION + 1000);
+    vibrate.high(); // shake the cage
+
+    tailFactor = TAIL_SHOCK_FACTOR; // move tail faster
+    
+    itunes.play(TRACK_NAME, PLAYLIST_NAME); // play SFX
+
+    // Stop animations after track finished
+    setTimeout(function() {
+      console.log("Shock Off");
+      vibrate.low();
+      strobe.low();
+      isRunning = false;
+      tailFactor = TAIL_NORMAL_FACTOR;
+    }, ANIMATION_DURATION + 1000);
+
+  },1500);
+
+  res.status(200).end();
 
 }

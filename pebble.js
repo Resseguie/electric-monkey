@@ -5,7 +5,7 @@ simply.on('singleClick', function(e) {
 
 function initShock() {
   ajax(
-    { url: 'http://10.0.0.11:3000/shock', cache: false },
+    { url: 'http://10.0.0.6:3000/shock', cache: false },
     function(data){
       console.log('shock');
     },
